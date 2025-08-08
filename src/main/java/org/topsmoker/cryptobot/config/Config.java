@@ -1,0 +1,39 @@
+package org.topsmoker.cryptobot.config;
+
+
+import lombok.Getter;
+
+import jakarta.xml.bind.annotation.*;
+
+@Getter
+@XmlRootElement(name = "Config")
+@XmlAccessorType(XmlAccessType.FIELD)
+public class Config {
+    @XmlElement(name = "ApiId", required = true)
+    private int apiId;
+    @XmlElement(name = "ApiHash", required = true)
+    private String apiHash;
+
+    @Getter
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class Catcher {
+        @XmlElement(name = "Credentials")
+        private Credentials credentials;
+    }
+
+    @Getter
+    @XmlAccessorType(XmlAccessType.FIELD)
+    public static class Activator {
+        @XmlElement(name = "Credentials")
+        private Credentials credentials;
+    }
+
+    @XmlElement(name = "Catcher")
+    private Catcher catcher;
+
+    @XmlElement(name = "Activator")
+    private Activator activator;
+}
+
+
+
