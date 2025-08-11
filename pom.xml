@@ -9,6 +9,11 @@
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
+            <groupId>org.drinkless</groupId>
+            <artifactId>tdlib</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
             <version>4.0.2</version>
@@ -17,13 +22,6 @@
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-impl</artifactId>
             <version>4.0.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.drinkless</groupId>
-            <artifactId>tdlib</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/td.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -35,12 +33,6 @@
             <artifactId>lombok</artifactId>
             <version>1.18.38</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
     <properties>

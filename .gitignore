@@ -39,4 +39,4 @@ td.jar
 db/
 td/
 tdlib/
-src/main/resources/
+src/main/resources/**/*
