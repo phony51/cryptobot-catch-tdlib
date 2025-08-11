@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Main {
     public static void main(String[] args) throws SyncClient.ExecutionException, InterruptedException {
         Config config = (new ResourceLoader()).load();
-
+        System.loadLibrary("tdjni");
         TdApi.SetTdlibParameters baseTdlibParameters = new TdApi.SetTdlibParameters();
         baseTdlibParameters.filesDirectory = "tdlib";
         baseTdlibParameters.useFileDatabase = true;
