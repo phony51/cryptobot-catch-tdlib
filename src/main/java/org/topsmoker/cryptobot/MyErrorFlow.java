@@ -1,9 +1,8 @@
 package org.topsmoker.cryptobot;
 
-import org.drinkless.tdlib.TdApi;
-import org.topsmoker.cryptobot.utils.ClientAuth;
+import org.topsmoker.cryptobot.utils.ClientSetup;
 
-public class MyErrorFlow implements ClientAuth.ErrorFlow {
+public class MyErrorFlow implements ClientSetup.ErrorFlow {
 
     @Override
     public void onInvalidCode() {

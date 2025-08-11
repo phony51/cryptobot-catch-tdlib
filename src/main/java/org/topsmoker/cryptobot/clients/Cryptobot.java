@@ -6,19 +6,22 @@ import org.drinkless.tdlib.TdApi;
 public class Cryptobot {
     private final Client client;
     public static final long USER_ID = 1559501630;
+    private final TdApi.SendMessage sendMessage;
 
     public Cryptobot(Client client) {
         this.client = client;
-        client.send(new TdApi.GetChat(USER_ID), null);
+        this.sendMessage = new TdApi.SendMessage();
+        client.send(new TdApi.SearchPublicChat("@send"), null);
+        sendMessage.chatId = USER_ID;
     }
 
     public void activate(String chequeId) {
-        TdApi.SendMessage sendMessage = new TdApi.SendMessage();
-        sendMessage.chatId = USER_ID;
-        sendMessage.inputMessageContent = new TdApi.InputMessageText(new TdApi.FormattedText("/start " + chequeId, null),
+        StringBuilder startBuilder = new StringBuilder("/start ");
+        sendMessage.inputMessageContent = new TdApi.InputMessageText(new TdApi.FormattedText(startBuilder.append(chequeId).toString(), null),
                 null,
                 false
         );
-        client.send(sendMessage, null); // TODO
+        client.send(sendMessage, null);
+        System.out.println("Activated: " + chequeId);
     }
 }

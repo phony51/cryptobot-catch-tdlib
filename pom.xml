@@ -36,6 +36,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>13.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.drinkless</groupId>
             <artifactId>tdlib</artifactId>
             <version>1.0</version>
@@ -49,11 +54,6 @@
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-impl</artifactId>
             <version>4.0.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

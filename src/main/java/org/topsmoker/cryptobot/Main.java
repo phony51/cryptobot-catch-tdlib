@@ -7,7 +7,7 @@ import org.topsmoker.cryptobot.clients.InlineChequeHandler;
 import org.topsmoker.cryptobot.config.Config;
 import org.topsmoker.cryptobot.config.Credentials;
 import org.topsmoker.cryptobot.config.ResourceLoader;
-import org.topsmoker.cryptobot.utils.ClientAuth;
+import org.topsmoker.cryptobot.utils.ClientSetup;
 import org.topsmoker.cryptobot.utils.SyncClient;
 
 import java.util.concurrent.locks.Condition;
@@ -17,10 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Main {
     public static void main(String[] args) throws SyncClient.ExecutionException, InterruptedException {
         Config config = (new ResourceLoader()).load();
-        System.loadLibrary("tdjni");
         TdApi.SetTdlibParameters baseTdlibParameters = new TdApi.SetTdlibParameters();
-        baseTdlibParameters.filesDirectory = "tdlib";
-        baseTdlibParameters.useFileDatabase = true;
+        baseTdlibParameters.useFileDatabase = false;
+        baseTdlibParameters.useChatInfoDatabase = false;
+        baseTdlibParameters.useMessageDatabase = false;
         baseTdlibParameters.useSecretChats = false;
         baseTdlibParameters.apiId = config.getApiId();
         baseTdlibParameters.apiHash = config.getApiHash();
@@ -36,8 +36,14 @@ public class Main {
         Credentials activatorCredentials = config.getActivator().getCredentials();
         Client activatorClient = Client.create(null, null, null);
         activatorClient.send(setLogVerbosityLevel, null);
-        new ClientAuth(activatorClient, new MyAuthFlow(activatorCredentials.getPhone(), activatorCredentials.getPassword()),
-                new MyErrorFlow(), baseTdlibParameters).auth();
+        ClientSetup activatorClientSetup = new ClientSetup(activatorClient,
+                new MyAuthFlow(
+                        activatorCredentials.getPhone(),
+                        activatorCredentials.getPassword()
+                ),
+                new MyErrorFlow(), baseTdlibParameters);
+        activatorClientSetup.setOptimizedOptions();
+        activatorClientSetup.auth();
 
 
         Cryptobot cryptobot = new Cryptobot(activatorClient);
@@ -47,8 +53,14 @@ public class Main {
         InlineChequeHandler handler = new InlineChequeHandler(cryptobot);
         Client catcherClient = Client.create(handler, null, null);
 
-        new ClientAuth(catcherClient, new MyAuthFlow(catcherCredentials.getPhone(), catcherCredentials.getPassword()),
-                new MyErrorFlow(), baseTdlibParameters).auth();
+        ClientSetup catcherClientSetup = new ClientSetup(catcherClient,
+                new MyAuthFlow(
+                        catcherCredentials.getPhone(),
+                        catcherCredentials.getPassword()
+                ),
+                new MyErrorFlow(), baseTdlibParameters);
+        catcherClientSetup.setOptimizedOptions();
+        catcherClientSetup.auth();
         handler.setClient(catcherClient);
 
         ReentrantLock lock = new ReentrantLock();
@@ -56,7 +68,7 @@ public class Main {
         lock.lock();
         try {
             loopCondition.await();
-        }  finally {
+        } finally {
             lock.unlock();
         }
     }

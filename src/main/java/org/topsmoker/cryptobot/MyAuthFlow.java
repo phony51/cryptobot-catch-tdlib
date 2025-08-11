@@ -1,10 +1,10 @@
 package org.topsmoker.cryptobot;
 
-import org.topsmoker.cryptobot.utils.ClientAuth;
+import org.topsmoker.cryptobot.utils.ClientSetup;
 
 import java.util.Scanner;
 
-public record MyAuthFlow(String getPhoneNumber, String getPassword) implements ClientAuth.AuthFlow {
+public record MyAuthFlow(String getPhoneNumber, String getPassword) implements ClientSetup.AuthFlow {
 
     @Override
     public String getCode() {
