@@ -36,11 +36,6 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>13.0.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.drinkless</groupId>
             <artifactId>tdlib</artifactId>
             <version>1.0</version>
