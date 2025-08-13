@@ -61,13 +61,13 @@ public class Main {
                 new MyErrorFlow(), baseTdlibParameters);
         catcherClientSetup.setOptimizedOptions();
         catcherClientSetup.auth();
-//        handler.setClient(catcherClient);
+        handler.setClient(catcherClient);
 
         ReentrantLock lock = new ReentrantLock();
         Condition loopCondition = lock.newCondition();
         lock.lock();
         try {
-            loopCondition.await();
+            loopCondition.await(); // TODO
         } finally {
             lock.unlock();
         }
