@@ -1,0 +1,8 @@
+services:
+  cryptobot-catch:
+    build:
+      dockerfile: Dockerfile
+    image: cryptobot-catch
+    restart: unless-stopped
+    volumes:
+      - ./db:/app/db
