@@ -3,8 +3,11 @@ package org.topsmoker.cryptobot.utils;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
+import java.util.concurrent.ExecutionException;
+
+
 public class ClientSetup {
-    private final SyncClient syncClient;
+    private final FutureClient futureClient;
     private final Client client;
     private final AuthFlow authFlow;
     private final ErrorFlow errorFlow;
@@ -14,7 +17,7 @@ public class ClientSetup {
                        AuthFlow authFlow, ErrorFlow errorFlow,
                        TdApi.SetTdlibParameters tdlibParameters) {
         this.client = client;
-        this.syncClient = new SyncClient(client);
+        this.futureClient = new FutureClient(client);
         this.authFlow = authFlow;
         this.errorFlow = errorFlow;
         this.tdlibParameters = tdlibParameters;
@@ -34,22 +37,22 @@ public class ClientSetup {
         void onReady();
     }
 
-    private boolean handleAuthorizationState(TdApi.AuthorizationState state) throws SyncClient.ExecutionException {
+    private boolean handleAuthorizationState(TdApi.AuthorizationState state) throws InterruptedException, ExecutionException {
         switch (state.getConstructor()) {
-            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> syncClient.execute(tdlibParameters);
+            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> futureClient.execute(tdlibParameters);
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR ->
-                    syncClient.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null));
+                    futureClient.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null)).get();
 
             case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR -> {
                 try {
-                    syncClient.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode()));
-                } catch (SyncClient.ExecutionException e) {
+                    futureClient.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode())).get();
+                } catch (ExecutionException e) {
                     errorFlow.onInvalidCode();
                 }
             }
 
             case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR ->
-                    syncClient.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword()));
+                    futureClient.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword())).get();
             case TdApi.AuthorizationStateReady.CONSTRUCTOR -> {
                 authFlow.onReady();
                 return true;
@@ -78,12 +81,18 @@ public class ClientSetup {
         client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(false)), null);
     }
 
-    public void auth() throws SyncClient.ExecutionException {
+    public void auth() throws InterruptedException {
         boolean authorized = false;
         while (!authorized) {
-            authorized = handleAuthorizationState(
-                    ((TdApi.AuthorizationState) syncClient.execute(new TdApi.GetAuthorizationState()))
-            );
+            try {
+                TdApi.Object result = futureClient.execute(new TdApi.GetAuthorizationState()).get();
+                authorized = handleAuthorizationState(
+                        ((TdApi.AuthorizationState) result)
+                );
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+
         }
     }
 }

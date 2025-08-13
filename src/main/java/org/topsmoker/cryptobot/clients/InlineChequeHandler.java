@@ -3,10 +3,9 @@ package org.topsmoker.cryptobot.clients;
 import lombok.Setter;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.topsmoker.cryptobot.utils.SyncClient;
+import org.topsmoker.cryptobot.utils.FutureClient;
 
 
-import java.time.LocalDateTime;
 import java.util.concurrent.*;
 
 
@@ -26,21 +25,20 @@ public class InlineChequeHandler implements Client.ResultHandler {
         private final static int ACTIVATED_URL_LENGTH = 34;
         private final long messageId;
         private final long chatId;
-        private final SyncClient syncClient;
+        private final FutureClient syncClient;
 
         ChequePollingTask(long chatId, long messageId) {
             this.messageId = messageId;
             this.chatId = chatId;
-            this.syncClient = new SyncClient(client);
+            this.syncClient = new FutureClient(client);
         }
-
         private static boolean isActivated(String url) {
             return url.length() == ACTIVATED_URL_LENGTH;
         }
 
         public void run() {
             try {
-                TdApi.Object result = syncClient.execute(new TdApi.GetMessage(chatId, messageId));
+                TdApi.Object result = syncClient.execute(new TdApi.GetMessage(chatId, messageId)).get();
                 TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) ((TdApi.Message) result).replyMarkup).rows[0][0];
                 if (!isChequeCreatingButton(button)) {
                     String url = ((TdApi.InlineKeyboardButtonTypeUrl) button.type).url;
@@ -52,7 +50,7 @@ public class InlineChequeHandler implements Client.ResultHandler {
                         throw new RuntimeException();
                     }
                 }
-            } catch (SyncClient.ExecutionException e) {
+            } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
 

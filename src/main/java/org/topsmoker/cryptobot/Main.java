@@ -8,14 +8,14 @@ import org.topsmoker.cryptobot.config.Config;
 import org.topsmoker.cryptobot.config.Credentials;
 import org.topsmoker.cryptobot.config.ResourceLoader;
 import org.topsmoker.cryptobot.utils.ClientSetup;
-import org.topsmoker.cryptobot.utils.SyncClient;
+import org.topsmoker.cryptobot.utils.FutureClient;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 
 public class Main {
-    public static void main(String[] args) throws SyncClient.ExecutionException, InterruptedException {
+    public static void main(String[] args) throws FutureClient.ExecutionException, InterruptedException {
         Config config = (new ResourceLoader()).load();
         TdApi.SetTdlibParameters baseTdlibParameters = new TdApi.SetTdlibParameters();
         baseTdlibParameters.useFileDatabase = false;
