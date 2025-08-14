@@ -1,6 +1,5 @@
 package org.topsmoker.cryptobot.clients;
 
-import lombok.Setter;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.topsmoker.cryptobot.utils.FutureClient;
@@ -18,9 +17,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
     private final ScheduledExecutorService pollingService;
     private final long pollingPeriodMs;
     private final long pollingTimeoutMs;
-    @Setter
-    private Client client;
-    private final FutureClient futureClient;
+    private FutureClient futureClient;
 
     @Override
     public void close() throws Exception {
@@ -63,13 +60,15 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         }
     }
 
+    public void setClient(Client client) {
+        this.futureClient = new FutureClient(client);
+    }
 
     public InlineChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {
         this.cryptobot = cryptobot;
         this.pollingPeriodMs = pollingPeriodMs;
         this.pollingTimeoutMs = pollingTimeoutMs;
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
-        this.futureClient = new FutureClient(client);
         this.threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
     }
 
@@ -108,7 +107,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
                         TimeUnit.MILLISECONDS);
                 pollingService.schedule(() -> {
                     pollingFuture.cancel(true);
-                }, pollingTimeoutMs, TimeUnit.SECONDS);
+                }, pollingTimeoutMs, TimeUnit.MILLISECONDS);
             } else {
                 String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
                 if (chequeId != null) {
