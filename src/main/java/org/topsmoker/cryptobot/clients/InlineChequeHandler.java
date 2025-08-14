@@ -1,9 +1,8 @@
 package org.topsmoker.cryptobot.clients;
 
-import com.sun.istack.Pool;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.topsmoker.cryptobot.utils.FutureClient;
+import org.topsmoker.cryptobot.utils.SyncClient;
 
 
 import java.util.concurrent.*;
@@ -19,7 +18,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
     private final ScheduledExecutorService pollingService;
     private final long pollingPeriodMs;
     private final long pollingTimeoutMs;
-    private FutureClient futureClient;
+    private SyncClient syncClient;
 
     @Override
     public void close() throws Exception {
@@ -47,7 +46,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
                 TdApi.GetMessage request = getMessage.get();
                 request.chatId = chatId;
                 request.messageId = messageId;
-                TdApi.Object result = futureClient.execute(request).get();
+                TdApi.Object result = syncClient.execute(request);
                 TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) ((TdApi.Message) result).replyMarkup).rows[0][0];
                 if (!isChequeCreatingButton(button)) {
                     String url = ((TdApi.InlineKeyboardButtonTypeUrl) button.type).url;
@@ -59,7 +58,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
                         throw new RuntimeException();
                     }
                 }
-            } catch (ExecutionException | InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
@@ -67,7 +66,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
     }
 
     public void setClient(Client client) {
-        this.futureClient = new FutureClient(client);
+        this.syncClient = new SyncClient(client);
     }
 
     public InlineChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {

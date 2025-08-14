@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutionException;
 
 
 public class ClientSetup {
-    private final FutureClient futureClient;
+    private final SyncClient syncClient;
     private final Client client;
     private final AuthFlow authFlow;
     private final ErrorFlow errorFlow;
@@ -17,7 +17,7 @@ public class ClientSetup {
                        AuthFlow authFlow, ErrorFlow errorFlow,
                        TdApi.SetTdlibParameters tdlibParameters) {
         this.client = client;
-        this.futureClient = new FutureClient(client);
+        this.syncClient = new SyncClient(client);
         this.authFlow = authFlow;
         this.errorFlow = errorFlow;
         this.tdlibParameters = tdlibParameters;
@@ -39,20 +39,19 @@ public class ClientSetup {
 
     private boolean handleAuthorizationState(TdApi.AuthorizationState state) throws InterruptedException, ExecutionException {
         switch (state.getConstructor()) {
-            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> futureClient.execute(tdlibParameters);
+            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> syncClient.execute(tdlibParameters);
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR ->
-                    futureClient.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null)).get();
+                    syncClient.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null));
 
             case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR -> {
-                try {
-                    futureClient.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode())).get();
-                } catch (ExecutionException e) {
+                TdApi.Object result = syncClient.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode()));
+                if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                     errorFlow.onInvalidCode();
                 }
             }
 
             case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR ->
-                    futureClient.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword())).get();
+                    syncClient.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword()));
             case TdApi.AuthorizationStateReady.CONSTRUCTOR -> {
                 authFlow.onReady();
                 return true;
@@ -85,7 +84,7 @@ public class ClientSetup {
         boolean authorized = false;
         while (!authorized) {
             try {
-                TdApi.Object result = futureClient.execute(new TdApi.GetAuthorizationState()).get();
+                TdApi.Object result = syncClient.execute(new TdApi.GetAuthorizationState());
                 authorized = handleAuthorizationState(
                         ((TdApi.AuthorizationState) result)
                 );
