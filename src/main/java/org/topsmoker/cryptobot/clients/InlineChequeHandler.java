@@ -9,19 +9,24 @@ import org.topsmoker.cryptobot.utils.FutureClient;
 import java.util.concurrent.*;
 
 
-public class InlineChequeHandler implements Client.ResultHandler {
+public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable {
     private final ExecutorService threadPool;
-    private final long CHEQUE_POLLING_PERIOD_MILLIS = 15;
-    private final long CHEQUE_POLLING_TIMEOUT_S = 2;
     private final int CHEQUE_URL_LENGTH = 35;
     private final int CHEQUE_ID_LENGTH = 12;
     private final int CHEQUE_ID_OFFSET = CHEQUE_URL_LENGTH - CHEQUE_ID_LENGTH;
     private final Cryptobot cryptobot;
     private final ScheduledExecutorService pollingService;
+    private final long pollingPeriodMs;
+    private final long pollingTimeoutMs;
     @Setter
     private Client client;
     private final FutureClient futureClient;
 
+    @Override
+    public void close() throws Exception {
+        pollingService.shutdown();
+        threadPool.shutdown();
+    }
 
     private class ChequePollingTask implements Runnable {
         private final static int ACTIVATED_URL_LENGTH = 34;
@@ -57,8 +62,11 @@ public class InlineChequeHandler implements Client.ResultHandler {
         }
     }
 
-    public InlineChequeHandler(Cryptobot cryptobot) {
+
+    public InlineChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {
         this.cryptobot = cryptobot;
+        this.pollingPeriodMs = pollingPeriodMs;
+        this.pollingTimeoutMs = pollingTimeoutMs;
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
         this.futureClient = new FutureClient(client);
         this.threadPool = Executors.newVirtualThreadPerTaskExecutor();
@@ -95,11 +103,11 @@ public class InlineChequeHandler implements Client.ResultHandler {
             if (isChequeCreatingButton(button)) {
                 ScheduledFuture<?> pollingFuture = pollingService.scheduleAtFixedRate(new ChequePollingTask(message.chatId, message.id),
                         0,
-                        CHEQUE_POLLING_PERIOD_MILLIS,
+                        pollingPeriodMs,
                         TimeUnit.MILLISECONDS);
                 pollingService.schedule(() -> {
                     pollingFuture.cancel(true);
-                }, CHEQUE_POLLING_TIMEOUT_S, TimeUnit.SECONDS);
+                }, pollingTimeoutMs, TimeUnit.SECONDS);
             } else {
                 String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
                 if (chequeId != null) {

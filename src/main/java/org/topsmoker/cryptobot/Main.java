@@ -50,24 +50,27 @@ public class Main {
 
         baseTdlibParameters.databaseDirectory = "db/catcher";
         Credentials catcherCredentials = config.getCatcher().getCredentials();
-        InlineChequeHandler handler = new InlineChequeHandler(cryptobot);
-        Client catcherClient = Client.create(handler, null, null);
-
-        ClientSetup catcherClientSetup = new ClientSetup(catcherClient,
-                new MyAuthFlow(
-                        catcherCredentials.getPhone(),
-                        catcherCredentials.getPassword()
-                ),
-                new MyErrorFlow(), baseTdlibParameters);
-        catcherClientSetup.setOptimizedOptions();
-        catcherClientSetup.auth();
-        handler.setClient(catcherClient);
 
         ReentrantLock lock = new ReentrantLock();
-        Condition loopCondition = lock.newCondition();
-        lock.lock();
-        try {
-            loopCondition.await(); // TODO
+        Condition liveCondition = lock.newCondition();
+
+        try (InlineChequeHandler handler = new InlineChequeHandler(cryptobot, config.getCatcher().getPollingPeriodMs(), config.getCatcher().getPollingTimeoutMs())) {
+            Client catcherClient = Client.create(handler, null, null);
+
+            ClientSetup catcherClientSetup = new ClientSetup(catcherClient,
+                    new MyAuthFlow(
+                            catcherCredentials.getPhone(),
+                            catcherCredentials.getPassword()
+                    ),
+                    new MyErrorFlow(), baseTdlibParameters);
+            catcherClientSetup.setOptimizedOptions();
+            catcherClientSetup.auth();
+            handler.setClient(catcherClient);
+
+            lock.lock();
+            liveCondition.await(); // TODO
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             lock.unlock();
         }
