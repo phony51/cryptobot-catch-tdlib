@@ -48,12 +48,16 @@ public class Main {
         Cryptobot cryptobot = new Cryptobot(activatorClient, config.getActivator().getRetryCount());
 
         baseTdlibParameters.databaseDirectory = "db/catcher";
-        Credentials catcherCredentials = config.getCatcher().getCredentials();
+        Config.Catcher catcherConfig = config.getCatcher();
+
+        Credentials catcherCredentials = catcherConfig.getCredentials();
 
         ReentrantLock lock = new ReentrantLock();
         Condition liveCondition = lock.newCondition();
 
-        try (ChequeHandler handler = new ChequeHandler(cryptobot, config.getCatcher().getPollingPeriodMs(), config.getCatcher().getPollingTimeoutMs())) {
+        try (ChequeHandler handler = new ChequeHandler(cryptobot,
+                catcherConfig.getPollingPeriodMs(), catcherConfig.getPollingTimeoutMs(),
+                catcherConfig.getInlineThreadsCount(), catcherConfig.getRegexThreadsCount())) {
             Client catcherClient = Client.create(handler, null, null);
 
             ClientSetup catcherClientSetup = new ClientSetup(catcherClient,

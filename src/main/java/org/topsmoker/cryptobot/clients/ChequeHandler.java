@@ -75,13 +75,15 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         this.syncClient = new SyncClient(client);
     }
 
-    public ChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {
+    public ChequeHandler(Cryptobot cryptobot,
+                         long pollingPeriodMs, long pollingTimeoutMs,
+                         int inlineThreadsCount, int regexThreadsCount) {
         this.cryptobot = cryptobot;
         this.pollingPeriodMs = pollingPeriodMs;
         this.pollingTimeoutMs = pollingTimeoutMs;
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
-        this.inlineThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()/2);
-        this.regexThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()/2+1);
+        this.inlineThreadPool = Executors.newFixedThreadPool(inlineThreadsCount);
+        this.regexThreadPool = Executors.newFixedThreadPool(regexThreadsCount);
 
     }
 
