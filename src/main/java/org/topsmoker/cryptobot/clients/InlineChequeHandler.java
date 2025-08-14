@@ -37,6 +37,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
             this.messageId = messageId;
             this.chatId = chatId;
         }
+
         private static boolean isActivated(String url) {
             return url.length() == ACTIVATED_URL_LENGTH;
         }
@@ -69,7 +70,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         this.pollingTimeoutMs = pollingTimeoutMs;
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
         this.futureClient = new FutureClient(client);
-        this.threadPool = Executors.newVirtualThreadPerTaskExecutor();
+        this.threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
     }
 
     private boolean isViaCryptobot(TdApi.Message message) {
