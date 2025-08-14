@@ -1,11 +1,13 @@
 package org.topsmoker.cryptobot.clients;
 
+import com.sun.istack.Pool;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.topsmoker.cryptobot.utils.FutureClient;
 
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable {
@@ -27,6 +29,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
 
     private class ChequePollingTask implements Runnable {
         private final static int ACTIVATED_URL_LENGTH = 34;
+        private final AtomicReference<TdApi.GetMessage> getMessage = new AtomicReference<>(new TdApi.GetMessage());
         private final long messageId;
         private final long chatId;
 
@@ -41,7 +44,10 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
 
         public void run() {
             try {
-                TdApi.Object result = futureClient.execute(new TdApi.GetMessage(chatId, messageId)).get();
+                TdApi.GetMessage request = getMessage.get();
+                request.chatId = chatId;
+                request.messageId = messageId;
+                TdApi.Object result = futureClient.execute(request).get();
                 TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) ((TdApi.Message) result).replyMarkup).rows[0][0];
                 if (!isChequeCreatingButton(button)) {
                     String url = ((TdApi.InlineKeyboardButtonTypeUrl) button.type).url;
