@@ -3,7 +3,7 @@ package org.topsmoker.cryptobot;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.topsmoker.cryptobot.clients.Cryptobot;
-import org.topsmoker.cryptobot.clients.InlineChequeHandler;
+import org.topsmoker.cryptobot.clients.ChequeHandler;
 import org.topsmoker.cryptobot.config.Config;
 import org.topsmoker.cryptobot.config.Credentials;
 import org.topsmoker.cryptobot.config.ResourceLoader;
@@ -53,7 +53,7 @@ public class Main {
         ReentrantLock lock = new ReentrantLock();
         Condition liveCondition = lock.newCondition();
 
-        try (InlineChequeHandler handler = new InlineChequeHandler(cryptobot, config.getCatcher().getPollingPeriodMs(), config.getCatcher().getPollingTimeoutMs())) {
+        try (ChequeHandler handler = new ChequeHandler(cryptobot, config.getCatcher().getPollingPeriodMs(), config.getCatcher().getPollingTimeoutMs())) {
             Client catcherClient = Client.create(handler, null, null);
 
             ClientSetup catcherClientSetup = new ClientSetup(catcherClient,

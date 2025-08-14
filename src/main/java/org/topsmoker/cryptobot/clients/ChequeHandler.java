@@ -7,15 +7,20 @@ import org.topsmoker.cryptobot.utils.SyncClient;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
-public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable {
-    private final ExecutorService threadPool;
+public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
+    private final ExecutorService inlineThreadPool;
+    private final ExecutorService regexThreadPool;
+    private final ScheduledExecutorService pollingService;
+
     private final int CHEQUE_URL_LENGTH = 35;
     private final int CHEQUE_ID_LENGTH = 12;
     private final int CHEQUE_ID_OFFSET = CHEQUE_URL_LENGTH - CHEQUE_ID_LENGTH;
+    private final Pattern chequeIdPattern = Pattern.compile("CQ[A-z\\d]{10}");
     private final Cryptobot cryptobot;
-    private final ScheduledExecutorService pollingService;
     private final long pollingPeriodMs;
     private final long pollingTimeoutMs;
     private SyncClient syncClient;
@@ -23,7 +28,8 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
     @Override
     public void close() throws Exception {
         pollingService.shutdown();
-        threadPool.shutdown();
+        inlineThreadPool.shutdown();
+        regexThreadPool.shutdown();
     }
 
     private class ChequePollingTask implements Runnable {
@@ -69,12 +75,14 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         this.syncClient = new SyncClient(client);
     }
 
-    public InlineChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {
+    public ChequeHandler(Cryptobot cryptobot, long pollingPeriodMs, long pollingTimeoutMs) {
         this.cryptobot = cryptobot;
         this.pollingPeriodMs = pollingPeriodMs;
         this.pollingTimeoutMs = pollingTimeoutMs;
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
-        this.threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
+        this.inlineThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()/2);
+        this.regexThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()/2+1);
+
     }
 
     private boolean isViaCryptobot(TdApi.Message message) {
@@ -100,7 +108,16 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         return null;
     }
 
-    private void handleNewMessage(TdApi.UpdateNewMessage updateNewMessage) {
+    private void findChequeIdInMessage(TdApi.UpdateNewMessage updateNewMessage) {
+        if (updateNewMessage.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+            Matcher m = chequeIdPattern.matcher(((TdApi.MessageText) updateNewMessage.message.content).text.text);
+            if (m.find()) {
+                cryptobot.activate(m.toMatchResult().group());
+            }
+        }
+    }
+
+    private void findCreatingOrForwardedCheques(TdApi.UpdateNewMessage updateNewMessage) {
         TdApi.Message message = updateNewMessage.message;
         if (isViaCryptobot(message) &&
                 message.replyMarkup != null) {
@@ -122,7 +139,7 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         }
     }
 
-    private void handleMessageEdited(TdApi.UpdateMessageEdited updateMessageEdited) {
+    private void findCreatedCheques(TdApi.UpdateMessageEdited updateMessageEdited) {
         TdApi.ReplyMarkup replyMarkup = updateMessageEdited.replyMarkup;
         if (replyMarkup != null && replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
             String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).
@@ -139,11 +156,12 @@ public class InlineChequeHandler implements Client.ResultHandler, AutoCloseable 
         switch (update.getConstructor()) {
             case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                 TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                threadPool.submit(() -> handleNewMessage(updateNewMessage));
+                inlineThreadPool.submit(() -> findCreatingOrForwardedCheques(updateNewMessage));
+                regexThreadPool.submit(() -> findChequeIdInMessage(updateNewMessage));
             }
             case TdApi.UpdateMessageEdited.CONSTRUCTOR -> {
                 TdApi.UpdateMessageEdited updateMessageEdited = (TdApi.UpdateMessageEdited) update;
-                threadPool.submit(() -> handleMessageEdited(updateMessageEdited));
+                inlineThreadPool.submit(() -> findCreatedCheques(updateMessageEdited));
             }
         }
     }
