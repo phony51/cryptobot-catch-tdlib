@@ -30,6 +30,8 @@ public class Config {
     public static class Activator {
         @XmlElement(name = "Credentials")
         private Credentials credentials;
+        @XmlElement(name = "RetryCount")
+        private int retryCount;
     }
 
     @XmlElement(name = "Catcher")

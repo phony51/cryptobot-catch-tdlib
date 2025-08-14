@@ -5,11 +5,13 @@ import org.drinkless.tdlib.TdApi;
 
 public class Cryptobot {
     private final Client client;
+    private final int retryCount;
     public static final long USER_ID = 1559501630;
     private final TdApi.SendMessage sendMessage;
 
-    public Cryptobot(Client client) {
+    public Cryptobot(Client client, int retryCount) {
         this.client = client;
+        this.retryCount = retryCount;
         this.sendMessage = new TdApi.SendMessage();
         client.send(new TdApi.SearchPublicChat("@send"), null);
         sendMessage.chatId = USER_ID;
@@ -21,7 +23,9 @@ public class Cryptobot {
                 null,
                 false
         );
-        client.send(sendMessage, null);
+        for (int i = 0; i < retryCount; i++) {
+            client.send(sendMessage, null);
+        }
         System.out.println("Activated: " + chequeId);
     }
 }

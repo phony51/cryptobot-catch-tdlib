@@ -46,7 +46,7 @@ public class Main {
         activatorClientSetup.auth();
 
 
-        Cryptobot cryptobot = new Cryptobot(activatorClient);
+        Cryptobot cryptobot = new Cryptobot(activatorClient, config.getActivator().getRetryCount());
 
         baseTdlibParameters.databaseDirectory = "db/catcher";
         Credentials catcherCredentials = config.getCatcher().getCredentials();
