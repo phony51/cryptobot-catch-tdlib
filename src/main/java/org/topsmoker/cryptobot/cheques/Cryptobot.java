@@ -1,9 +1,9 @@
 package org.topsmoker.cryptobot.cheques;
 
-import org.drinkless.tdlib.Client;
+import org.topsmoker.cryptobot.misc.Client;
 import org.drinkless.tdlib.TdApi;
 
-public class Cryptobot {
+public class Cryptobot implements Activator {
     private final Client client;
     private final int retryCount;
     public static final long USER_ID = 1559501630;
@@ -29,3 +29,4 @@ public class Cryptobot {
         System.out.println("Activated: " + chequeId);
     }
 }
+

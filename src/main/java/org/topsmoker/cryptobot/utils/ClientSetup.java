@@ -1,14 +1,12 @@
 package org.topsmoker.cryptobot.utils;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-
-import java.util.concurrent.ExecutionException;
+import org.topsmoker.cryptobot.misc.Client;
+import org.topsmoker.cryptobot.misc.ExecutionException;
 
 
 public class ClientSetup {
-    private final SyncClient syncClient;
-    private final Client client;
+    private final org.topsmoker.cryptobot.misc.Client client;
     private final AuthFlow authFlow;
     private final ErrorFlow errorFlow;
     private final TdApi.SetTdlibParameters tdlibParameters;
@@ -17,7 +15,6 @@ public class ClientSetup {
                        AuthFlow authFlow, ErrorFlow errorFlow,
                        TdApi.SetTdlibParameters tdlibParameters) {
         this.client = client;
-        this.syncClient = new SyncClient(client);
         this.authFlow = authFlow;
         this.errorFlow = errorFlow;
         this.tdlibParameters = tdlibParameters;
@@ -37,21 +34,21 @@ public class ClientSetup {
         void onReady();
     }
 
-    private boolean handleAuthorizationState(TdApi.AuthorizationState state) throws InterruptedException, ExecutionException {
+    private boolean handleAuthorizationState(TdApi.AuthorizationState state) throws ExecutionException {
         switch (state.getConstructor()) {
-            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> syncClient.execute(tdlibParameters);
+            case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR -> client.execute(tdlibParameters);
             case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR ->
-                    syncClient.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null));
+                    client.execute(new TdApi.SetAuthenticationPhoneNumber(authFlow.getPhoneNumber(), null));
 
             case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR -> {
-                TdApi.Object result = syncClient.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode()));
+                TdApi.Object result = client.execute(new TdApi.CheckAuthenticationCode(authFlow.getCode()));
                 if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                     errorFlow.onInvalidCode();
                 }
             }
 
             case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR ->
-                    syncClient.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword()));
+                    client.execute(new TdApi.CheckAuthenticationPassword(authFlow.getPassword()));
             case TdApi.AuthorizationStateReady.CONSTRUCTOR -> {
                 authFlow.onReady();
                 return true;
@@ -84,7 +81,7 @@ public class ClientSetup {
         boolean authorized = false;
         while (!authorized) {
             try {
-                TdApi.Object result = syncClient.execute(new TdApi.GetAuthorizationState());
+                TdApi.Object result = client.execute(new TdApi.GetAuthorizationState());
                 authorized = handleAuthorizationState(
                         ((TdApi.AuthorizationState) result)
                 );

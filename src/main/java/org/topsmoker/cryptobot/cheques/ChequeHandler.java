@@ -1,120 +1,60 @@
 package org.topsmoker.cryptobot.cheques;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.topsmoker.cryptobot.utils.SyncClient;
-
 
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.topsmoker.cryptobot.cheques.Helper.*;
 
-public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
+
+public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, AutoCloseable {
     private final ExecutorService inlineThreadPool;
     private final ExecutorService regexThreadPool;
-    private final ScheduledExecutorService pollingService;
-
-    private final int CHEQUE_URL_LENGTH = 35;
-    private final int CHEQUE_ID_LENGTH = 12;
-    private final int CHEQUE_ID_OFFSET = CHEQUE_URL_LENGTH - CHEQUE_ID_LENGTH;
+    private final PollingService pollingService;
+    private final boolean usePolling;
     private final Pattern chequeIdPattern;
-    private final Cryptobot cryptobot;
-    private final long pollingPeriodMs;
-    private final long pollingTimeoutMs;
-    private SyncClient syncClient;
+    private final Activator activator;
 
     @Override
     public void close() throws Exception {
-        pollingService.shutdown();
+        if (usePolling) {
+            pollingService.close();
+        }
         inlineThreadPool.shutdown();
+        if (!inlineThreadPool.awaitTermination(1, TimeUnit.MINUTES)) {
+            inlineThreadPool.shutdownNow();
+        }
         regexThreadPool.shutdown();
-    }
-
-    private class ChequePollingTask implements Runnable {
-        private final static int ACTIVATED_URL_LENGTH = 34;
-        private final AtomicReference<TdApi.GetMessage> getMessage = new AtomicReference<>(new TdApi.GetMessage());
-        private final long messageId;
-        private final long chatId;
-
-        ChequePollingTask(long chatId, long messageId) {
-            this.messageId = messageId;
-            this.chatId = chatId;
-        }
-
-        private static boolean isActivated(String url) {
-            return url.length() == ACTIVATED_URL_LENGTH;
-        }
-
-        public void run() {
-            try {
-                TdApi.GetMessage request = getMessage.get();
-                request.chatId = chatId;
-                request.messageId = messageId;
-                TdApi.Object result = syncClient.execute(request);
-                TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) ((TdApi.Message) result).replyMarkup).rows[0][0];
-                if (!isChequeCreatingButton(button)) {
-                    String url = ((TdApi.InlineKeyboardButtonTypeUrl) button.type).url;
-                    String chequeId = unsafeExtractChequeId(url);
-                    if (chequeId != null) {
-                        cryptobot.activate(chequeId);
-                        throw new RuntimeException();
-                    } else if (isActivated(url)) {
-                        throw new RuntimeException();
-                    }
-                }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
+        if (!regexThreadPool.awaitTermination(1, TimeUnit.MINUTES)) {
+            regexThreadPool.shutdownNow();
         }
     }
 
-    public void setClient(Client client) {
-        this.syncClient = new SyncClient(client);
-    }
-
-    public ChequeHandler(Cryptobot cryptobot,
-                         long pollingPeriodMs, long pollingTimeoutMs,
+    public ChequeHandler(Activator activator,
+                         PollingService pollingService,
                          int inlineThreadsCount, int regexThreadsCount) {
-        this.cryptobot = cryptobot;
-        this.pollingPeriodMs = pollingPeriodMs;
-        this.pollingTimeoutMs = pollingTimeoutMs;
-        this.pollingService = Executors.newSingleThreadScheduledExecutor();
+        this.activator = activator;
+        if (pollingService != null) {
+            this.pollingService = pollingService;
+            this.usePolling = true;
+        } else {
+            this.pollingService = null;
+            this.usePolling = false;
+        }
+
         this.inlineThreadPool = Executors.newFixedThreadPool(inlineThreadsCount);
         this.regexThreadPool = Executors.newFixedThreadPool(regexThreadsCount);
         this.chequeIdPattern = Pattern.compile("CQ[A-z\\d]{10}");
     }
 
-    private boolean isViaCryptobot(TdApi.Message message) {
-        return message.viaBotUserId == Cryptobot.USER_ID;
-    }
-
-    private boolean isChequeCreatingButton(TdApi.InlineKeyboardButton inlineKeyboardButton) {
-        return inlineKeyboardButton.text.charAt(0) == '…';
-    }
-
-    private String extractChequeId(String url) {
-        if (url.length() == CHEQUE_URL_LENGTH &&
-                url.charAt(CHEQUE_ID_OFFSET) == 'C') {
-            return url.substring(CHEQUE_ID_OFFSET);
-        }
-        return null;
-    }
-
-    private String unsafeExtractChequeId(String url) {
-        if (url.length() == CHEQUE_URL_LENGTH) {
-            return url.substring(CHEQUE_ID_OFFSET);
-        }
-        return null;
-    }
 
     private void findChequeIdInMessage(TdApi.UpdateNewMessage updateNewMessage) {
         if (updateNewMessage.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
             Matcher m = chequeIdPattern.matcher(((TdApi.MessageText) updateNewMessage.message.content).text.text);
             if (m.find()) {
-                cryptobot.activate(m.toMatchResult().group());
+                activator.activate(m.toMatchResult().group());
             }
         }
     }
@@ -124,18 +64,12 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         if (isViaCryptobot(message) &&
                 message.replyMarkup != null) {
             TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) message.replyMarkup).rows[0][0];
-            if (isChequeCreatingButton(button)) {
-                ScheduledFuture<?> pollingFuture = pollingService.scheduleAtFixedRate(new ChequePollingTask(message.chatId, message.id),
-                        0,
-                        pollingPeriodMs,
-                        TimeUnit.MILLISECONDS);
-                pollingService.schedule(() -> {
-                    pollingFuture.cancel(true);
-                }, pollingTimeoutMs, TimeUnit.MILLISECONDS);
+            if (usePolling && isChequeCreatingButton(button)) {
+                pollingService.poll(message.chatId, message.id);
             } else {
                 String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
                 if (chequeId != null) {
-                    cryptobot.activate(chequeId);
+                    activator.activate(chequeId);
                 }
             }
         }
@@ -148,7 +82,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
                     rows[0][0].type)
                     .url);
             if (chequeId != null) {
-                cryptobot.activate(chequeId);
+                activator.activate(chequeId);
             }
         }
     }
