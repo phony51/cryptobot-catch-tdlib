@@ -1,4 +1,4 @@
-package org.topsmoker.cryptobot.clients;
+package org.topsmoker.cryptobot.cheques;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -19,7 +19,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
     private final int CHEQUE_URL_LENGTH = 35;
     private final int CHEQUE_ID_LENGTH = 12;
     private final int CHEQUE_ID_OFFSET = CHEQUE_URL_LENGTH - CHEQUE_ID_LENGTH;
-    private final Pattern chequeIdPattern = Pattern.compile("CQ[A-z\\d]{10}");
+    private final Pattern chequeIdPattern;
     private final Cryptobot cryptobot;
     private final long pollingPeriodMs;
     private final long pollingTimeoutMs;
@@ -84,7 +84,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         this.pollingService = Executors.newSingleThreadScheduledExecutor();
         this.inlineThreadPool = Executors.newFixedThreadPool(inlineThreadsCount);
         this.regexThreadPool = Executors.newFixedThreadPool(regexThreadsCount);
-
+        this.chequeIdPattern = Pattern.compile("CQ[A-z\\d]{10}");
     }
 
     private boolean isViaCryptobot(TdApi.Message message) {
@@ -119,7 +119,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         }
     }
 
-    private void findCreatingOrForwardedCheques(TdApi.UpdateNewMessage updateNewMessage) {
+    private void findCreatingOrForwardedCheque(TdApi.UpdateNewMessage updateNewMessage) {
         TdApi.Message message = updateNewMessage.message;
         if (isViaCryptobot(message) &&
                 message.replyMarkup != null) {
@@ -141,7 +141,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         }
     }
 
-    private void findCreatedCheques(TdApi.UpdateMessageEdited updateMessageEdited) {
+    private void findCreatedCheque(TdApi.UpdateMessageEdited updateMessageEdited) {
         TdApi.ReplyMarkup replyMarkup = updateMessageEdited.replyMarkup;
         if (replyMarkup != null && replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
             String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).
@@ -158,12 +158,12 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         switch (update.getConstructor()) {
             case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                 TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                inlineThreadPool.submit(() -> findCreatingOrForwardedCheques(updateNewMessage));
+                inlineThreadPool.submit(() -> findCreatingOrForwardedCheque(updateNewMessage));
                 regexThreadPool.submit(() -> findChequeIdInMessage(updateNewMessage));
             }
             case TdApi.UpdateMessageEdited.CONSTRUCTOR -> {
                 TdApi.UpdateMessageEdited updateMessageEdited = (TdApi.UpdateMessageEdited) update;
-                inlineThreadPool.submit(() -> findCreatedCheques(updateMessageEdited));
+                inlineThreadPool.submit(() -> findCreatedCheque(updateMessageEdited));
             }
         }
     }

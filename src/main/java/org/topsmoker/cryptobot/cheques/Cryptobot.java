@@ -1,4 +1,4 @@
-package org.topsmoker.cryptobot.clients;
+package org.topsmoker.cryptobot.cheques;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
