@@ -5,15 +5,15 @@ import org.topsmoker.cryptobot.mocks.MockActivator;
 import org.openjdk.jmh.annotations.*;
 import org.topsmoker.cryptobot.cheques.ChequeHandler;
 import org.topsmoker.cryptobot.cases.Updates;
-import java.util.concurrent.TimeUnit;
+
+import java.util.concurrent.*;
 
 
 @State(Scope.Benchmark)
-@BenchmarkMode({Mode.Throughput})
+@BenchmarkMode({Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Warmup(iterations = 3, time = 5)
-@Measurement(iterations = 5, time = 5)
-@Threads(4)
+@Warmup(iterations = 2, time = 5)
+@Measurement(iterations = 4, time = 5)
 @Fork(2)
 public class HandlerBenchmark {
     private ChequeHandler chequeHandler;
@@ -21,7 +21,7 @@ public class HandlerBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        chequeHandler = new ChequeHandler(new MockActivator(), null, 1);
+        chequeHandler = new ChequeHandler(new MockActivator(), null);
         chequeHandler.close();
     }
 
@@ -30,8 +30,8 @@ public class HandlerBenchmark {
         return chequeHandler.findCreatingOrForwardedCheque(Updates.getForwardedCheque());
     }
 
+
     @Benchmark
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public boolean benchmarkRegexCheque() {
         return chequeHandler.findChequeIdInMessage(Updates.getRegexCheque());
     }

@@ -2,7 +2,6 @@ package org.topsmoker.cryptobot.cheques;
 
 import org.drinkless.tdlib.TdApi;
 
-import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,8 +9,6 @@ import static org.topsmoker.cryptobot.cheques.Helper.*;
 
 
 public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, AutoCloseable {
-//    private final ExecutorService inlineThreadPool;
-    private final ExecutorService regexThreadPool;
     private final PollingService pollingService;
     private final boolean usePolling;
     private final Pattern chequeIdPattern;
@@ -22,14 +19,10 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
         if (usePolling) {
             pollingService.close();
         }
-        regexThreadPool.shutdown();
-        if (!regexThreadPool.awaitTermination(1, TimeUnit.MINUTES)) {
-            regexThreadPool.shutdownNow();
-        }
     }
 
     public ChequeHandler(Activator activator,
-                         PollingService pollingService, int regexThreadsCount) {
+                         PollingService pollingService) {
         this.activator = activator;
         if (pollingService != null) {
             this.pollingService = pollingService;
@@ -38,8 +31,6 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
             this.pollingService = null;
             this.usePolling = false;
         }
-
-        this.regexThreadPool = Executors.newFixedThreadPool(regexThreadsCount);
         this.chequeIdPattern = Pattern.compile("CQ[A-Za-z0-9]{10}");
     }
 
@@ -94,7 +85,7 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
             case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                 TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
                 if (!findCreatingOrForwardedCheque(updateNewMessage)) {
-                    regexThreadPool.submit(() -> findChequeIdInMessage(updateNewMessage));
+                    findChequeIdInMessage(updateNewMessage);
                 }
             }
             case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
