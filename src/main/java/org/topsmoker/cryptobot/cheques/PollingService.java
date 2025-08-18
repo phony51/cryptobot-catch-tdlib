@@ -70,9 +70,6 @@ public class PollingService implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        this.scheduledExecutor.shutdown();
-        if (!this.scheduledExecutor.awaitTermination(1, TimeUnit.MINUTES)) {
-            this.scheduledExecutor.shutdownNow();
-        }
+        scheduledExecutor.close();
     }
 }

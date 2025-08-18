@@ -1,4 +1,4 @@
-FROM maven:3.9.11-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9.11-eclipse-temurin-24-alpine AS builder
 
 WORKDIR /build
 
@@ -15,7 +15,7 @@ RUN mvn install:install-file \
 COPY src/ ./src
 RUN mvn package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 
 WORKDIR /app
 

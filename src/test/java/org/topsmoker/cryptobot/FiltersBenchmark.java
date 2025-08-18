@@ -15,13 +15,13 @@ import java.util.concurrent.*;
 @Warmup(iterations = 2, time = 5)
 @Measurement(iterations = 4, time = 5)
 @Fork(2)
-public class HandlerBenchmark {
+public class FiltersBenchmark {
     private ChequeHandler chequeHandler;
 
 
     @Setup
     public void setup() throws Exception {
-        chequeHandler = new ChequeHandler(new MockActivator(), null);
+        chequeHandler = new ChequeHandler(new MockActivator(),null, 1);
         chequeHandler.close();
     }
 

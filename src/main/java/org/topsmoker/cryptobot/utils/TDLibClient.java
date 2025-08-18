@@ -1,6 +1,5 @@
 package org.topsmoker.cryptobot.utils;
 
-import lombok.Setter;
 import org.drinkless.tdlib.TdApi;
 import org.topsmoker.cryptobot.misc.Client;
 import org.topsmoker.cryptobot.misc.ExecutionException;
@@ -16,7 +15,6 @@ public class TDLibClient implements Client {
     private final Condition gotResult = resultLock.newCondition();
     private TdApi.Object result;
     private boolean haveResult = false;
-    @Setter
     private ResultHandler updateHandler;
 
     public TDLibClient(ResultHandler updateHandler) {
@@ -24,6 +22,9 @@ public class TDLibClient implements Client {
         this.client = org.drinkless.tdlib.Client.create(result -> this.updateHandler.onResult(result), null, null);
     }
 
+    public void setUpdateHandler(ResultHandler updateHandler) {
+        this.updateHandler = updateHandler;
+    }
 
     @Override
     public void send(TdApi.Function<?> function, org.drinkless.tdlib.Client.ResultHandler resultHandler) {

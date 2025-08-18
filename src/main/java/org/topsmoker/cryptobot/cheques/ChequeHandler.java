@@ -2,6 +2,8 @@ package org.topsmoker.cryptobot.cheques;
 
 import org.drinkless.tdlib.TdApi;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,19 +13,23 @@ import static org.topsmoker.cryptobot.cheques.Helper.*;
 public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, AutoCloseable {
     private final PollingService pollingService;
     private final boolean usePolling;
+    private final ExecutorService updatesExecutor;
     private final Pattern chequeIdPattern;
     private final Activator activator;
 
     @Override
     public void close() throws Exception {
+        updatesExecutor.close();
         if (usePolling) {
             pollingService.close();
         }
     }
 
     public ChequeHandler(Activator activator,
-                         PollingService pollingService) {
+                         PollingService pollingService,
+                         int updatesThreadsCount) {
         this.activator = activator;
+        this.updatesExecutor = Executors.newFixedThreadPool(updatesThreadsCount);
         if (pollingService != null) {
             this.pollingService = pollingService;
             this.usePolling = true;
@@ -68,12 +74,13 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
     public boolean findCreatedCheque(TdApi.UpdateMessageEdited updateMessageEdited) {
         TdApi.ReplyMarkup replyMarkup = updateMessageEdited.replyMarkup;
         if (replyMarkup != null && replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
-            String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).
-                    rows[0][0].type)
-                    .url);
-            if (chequeId != null) {
-                activator.activate(chequeId);
-                return true;
+            TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).rows[0][0];
+            if (button.type.getConstructor() == TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR) {
+                String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
+                if (chequeId != null) {
+                    activator.activate(chequeId);
+                    return true;
+                }
             }
         }
         return false;
@@ -81,16 +88,17 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
 
     @Override
     public void onResult(TdApi.Object update) {
-        switch (update.getConstructor()) {
-            case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
-                TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                if (!findCreatingOrForwardedCheque(updateNewMessage)) {
-                    findChequeIdInMessage(updateNewMessage);
+        updatesExecutor.execute(() -> {
+            switch (update.getConstructor()) {
+                case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
+                    TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
+                    if (!findCreatingOrForwardedCheque(updateNewMessage)) {
+                        findChequeIdInMessage(updateNewMessage);
+                    }
                 }
+                case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
             }
-            case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
-        }
+        });
     }
-
 }
 
