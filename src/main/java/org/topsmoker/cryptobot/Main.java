@@ -69,7 +69,7 @@ public class Main {
 
         try (ChequeHandler handler = new ChequeHandler(cryptobot,
                 new PollingService(catcherClient, cryptobot, catcherConfig.getPollingPeriodMs(), catcherConfig.getPollingTimeoutMs()),
-                catcherConfig.getInlineThreadsCount(), catcherConfig.getRegexThreadsCount())) {
+                catcherConfig.getRegexThreadsCount())) {
             catcherClient.setUpdateHandler(handler);
 
             lock.lock();
