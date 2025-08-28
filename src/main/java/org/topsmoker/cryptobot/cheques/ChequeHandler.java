@@ -14,8 +14,8 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
     private final PollingService pollingService;
     private final boolean usePolling;
     private final ExecutorService updatesExecutor;
-    private final Pattern chequeIdPattern;
     private final Activator activator;
+    private final Matcher matcher;
 
     @Override
     public void close() throws Exception {
@@ -37,15 +37,15 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
             this.pollingService = null;
             this.usePolling = false;
         }
-        this.chequeIdPattern = Pattern.compile("CQ[A-Za-z0-9]{10}");
+        this.matcher = Pattern.compile("CQ[A-Za-z0-9]{10}").matcher("");
     }
 
 
     public boolean findChequeIdInMessage(TdApi.UpdateNewMessage updateNewMessage) {
         if (updateNewMessage.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-            Matcher m = chequeIdPattern.matcher(((TdApi.MessageText) updateNewMessage.message.content).text.text);
-            if (m.find()) {
-                activator.activate(m.toMatchResult().group());
+            matcher.reset(((TdApi.MessageText) updateNewMessage.message.content).text.text);
+            if (matcher.find()) {
+                activator.activate(matcher.group());
                 return true;
             }
         }
@@ -54,10 +54,10 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
 
     public boolean findCreatingOrForwardedCheque(TdApi.UpdateNewMessage updateNewMessage) {
         TdApi.Message message = updateNewMessage.message;
-        if (isViaCryptobot(message) &&
-                message.replyMarkup != null) {
+        if (message.replyMarkup != null &&
+                isViaCryptobot(message)) {
             TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) message.replyMarkup).rows[0][0];
-            if (usePolling && isChequeCreatingButton(button)) {
+            if (isChequeCreatingButton(button) && usePolling) {
                 pollingService.poll(message.chatId, message.id);
                 return true;
             } else {
