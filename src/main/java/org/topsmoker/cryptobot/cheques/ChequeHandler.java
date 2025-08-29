@@ -31,7 +31,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
                          int regexThreadsCount) {
         this.activator = activator;
         this.regexExecutor = Executors.newFixedThreadPool(regexThreadsCount);
-        this.chequePattern = Pattern.compile("CQ[A-Za-z0-9]{10}");
+        this.chequePattern = Pattern.compile("Q[A-Za-z0-9]{10}");
         if (pollingService != null) {
             this.pollingService = pollingService;
             this.usePolling = true;
@@ -46,7 +46,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         if (updateNewMessage.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
             Matcher m = chequePattern.matcher(((TdApi.MessageText) updateNewMessage.message.content).text.text);
             if (m.find()) {
-                activator.activate(m.group());
+                activator.activate("C" + m.group()); // micro optimization
                 return true;
             }
         }
