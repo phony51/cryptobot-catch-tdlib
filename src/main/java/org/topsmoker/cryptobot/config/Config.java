@@ -14,8 +14,8 @@ public class Config {
     public static class Catcher {
         @XmlElement(name = "Credentials")
         private Credentials credentials;
-        @XmlElement(name = "UpdateThreadsCount")
-        private int updateThreadsCount;
+        @XmlElement(name = "RegexThreadsCount")
+        private int regexThreadsCount;
         @XmlElement(name = "PollingPeriodMs")
         private long pollingPeriodMs;
         @XmlElement(name = "PollingTimeoutMs")
@@ -25,8 +25,8 @@ public class Config {
             return credentials;
         }
 
-        public int getUpdateThreadsCount() {
-            return updateThreadsCount;
+        public int getRegexThreadsCount() {
+            return regexThreadsCount;
         }
 
         public long getPollingPeriodMs() {
@@ -42,15 +42,9 @@ public class Config {
     public static class Activator {
         @XmlElement(name = "Credentials")
         private Credentials credentials;
-        @XmlElement(name = "RetryCount")
-        private int retryCount;
 
         public Credentials getCredentials() {
             return credentials;
-        }
-
-        public int getRetryCount() {
-            return retryCount;
         }
     }
 

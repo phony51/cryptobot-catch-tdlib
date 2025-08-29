@@ -46,7 +46,7 @@ public class Main {
         activatorClientSetup.auth();
 
 
-        Cryptobot cryptobot = new Cryptobot(activatorClient, config.getActivator().getRetryCount());
+        Cryptobot cryptobot = new Cryptobot(activatorClient);
 
         baseTdlibParameters.databaseDirectory = "db/catcher";
         Config.Catcher catcherConfig = config.getCatcher();
@@ -69,7 +69,7 @@ public class Main {
 
         try (ChequeHandler handler = new ChequeHandler(cryptobot,
                 new PollingService(catcherClient, cryptobot, catcherConfig.getPollingPeriodMs(), catcherConfig.getPollingTimeoutMs()),
-                catcherConfig.getUpdateThreadsCount())) {
+                catcherConfig.getRegexThreadsCount())) {
             catcherClient.setUpdateHandler(handler);
 
             lock.lock();

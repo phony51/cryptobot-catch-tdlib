@@ -1,5 +1,6 @@
 package org.topsmoker.cryptobot.cheques;
 
+import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
 import java.util.concurrent.ExecutorService;
@@ -10,16 +11,16 @@ import java.util.regex.Pattern;
 import static org.topsmoker.cryptobot.cheques.Helper.*;
 
 
-public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, AutoCloseable {
+public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
     private final PollingService pollingService;
     private final boolean usePolling;
-    private final ExecutorService updatesExecutor;
+    private final ExecutorService regexExecutor;
     private final Activator activator;
-    private final Matcher matcher;
+    private final Pattern chequePattern;
 
     @Override
     public void close() throws Exception {
-        updatesExecutor.close();
+        regexExecutor.close();
         if (usePolling) {
             pollingService.close();
         }
@@ -27,9 +28,10 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
 
     public ChequeHandler(Activator activator,
                          PollingService pollingService,
-                         int updatesThreadsCount) {
+                         int regexThreadsCount) {
         this.activator = activator;
-        this.updatesExecutor = Executors.newFixedThreadPool(updatesThreadsCount);
+        this.regexExecutor = Executors.newFixedThreadPool(regexThreadsCount);
+        this.chequePattern = Pattern.compile("CQ[A-Za-z0-9]{10}");
         if (pollingService != null) {
             this.pollingService = pollingService;
             this.usePolling = true;
@@ -37,15 +39,14 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
             this.pollingService = null;
             this.usePolling = false;
         }
-        this.matcher = Pattern.compile("CQ[A-Za-z0-9]{10}").matcher("");
     }
 
 
     public boolean findChequeIdInMessage(TdApi.UpdateNewMessage updateNewMessage) {
         if (updateNewMessage.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-            matcher.reset(((TdApi.MessageText) updateNewMessage.message.content).text.text);
-            if (matcher.find()) {
-                activator.activate(matcher.group());
+            Matcher m = chequePattern.matcher(((TdApi.MessageText) updateNewMessage.message.content).text.text);
+            if (m.find()) {
+                activator.activate(m.group());
                 return true;
             }
         }
@@ -56,15 +57,18 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
         TdApi.Message message = updateNewMessage.message;
         if (message.replyMarkup != null &&
                 isViaCryptobot(message)) {
-            TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) message.replyMarkup).rows[0][0];
-            if (isChequeCreatingButton(button) && usePolling) {
-                pollingService.poll(message.chatId, message.id);
-                return true;
-            } else {
-                String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
-                if (chequeId != null) {
-                    activator.activate(chequeId);
+            TdApi.ReplyMarkup replyMarkup = message.replyMarkup;
+            if (replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
+                TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).rows[0][0];
+                if (isChequeCreatingButton(button) && usePolling) {
+                    pollingService.poll(message.chatId, message.id);
                     return true;
+                } else {
+                    String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
+                    if (chequeId != null) {
+                        activator.activate(chequeId);
+                        return true;
+                    }
                 }
             }
         }
@@ -88,17 +92,15 @@ public class ChequeHandler implements org.drinkless.tdlib.Client.ResultHandler, 
 
     @Override
     public void onResult(TdApi.Object update) {
-        updatesExecutor.execute(() -> {
-            switch (update.getConstructor()) {
-                case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
-                    TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                    if (!findCreatingOrForwardedCheque(updateNewMessage)) {
-                        findChequeIdInMessage(updateNewMessage);
-                    }
+        switch (update.getConstructor()) {
+            case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
+                TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
+                if (!findCreatingOrForwardedCheque(updateNewMessage)) {
+                    regexExecutor.execute(() -> findChequeIdInMessage(updateNewMessage));
                 }
-                case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
             }
-        });
+            case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
+        }
     }
 }
 
