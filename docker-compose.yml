@@ -4,5 +4,7 @@ services:
       dockerfile: Dockerfile
     image: cryptobot-catch
     restart: unless-stopped
+    network_mode: host
+
     volumes:
       - ./db:/app/db
