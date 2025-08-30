@@ -18,10 +18,9 @@ import java.util.concurrent.*;
 public class FiltersBenchmark {
     private ChequeHandler chequeHandler;
 
-
     @Setup
     public void setup() throws Exception {
-        chequeHandler = new ChequeHandler(new MockActivator(),null, 1);
+        chequeHandler = new ChequeHandler(new MockActivator(),null);
         chequeHandler.close();
     }
 

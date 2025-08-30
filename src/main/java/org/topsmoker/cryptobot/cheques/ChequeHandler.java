@@ -7,30 +7,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import static org.topsmoker.cryptobot.cheques.Helper.*;
 
 
 public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
     private final PollingService pollingService;
     private final boolean usePolling;
-    private final ExecutorService regexExecutor;
     private final Activator activator;
     private final Pattern chequePattern;
+    ExecutorService updatesExecutor;
+
 
     @Override
     public void close() throws Exception {
-        regexExecutor.close();
+        updatesExecutor.close();
         if (usePolling) {
             pollingService.close();
         }
     }
 
     public ChequeHandler(Activator activator,
-                         PollingService pollingService,
-                         int regexThreadsCount) {
+                         PollingService pollingService) {
         this.activator = activator;
-        this.regexExecutor = Executors.newFixedThreadPool(regexThreadsCount);
         this.chequePattern = Pattern.compile("Q[A-Za-z0-9]{10}");
         if (pollingService != null) {
             this.pollingService = pollingService;
@@ -39,6 +37,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
             this.pollingService = null;
             this.usePolling = false;
         }
+        updatesExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
 
@@ -75,6 +74,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         return false;
     }
 
+
     public boolean findCreatedCheque(TdApi.UpdateMessageEdited updateMessageEdited) {
         TdApi.ReplyMarkup replyMarkup = updateMessageEdited.replyMarkup;
         if (replyMarkup != null && replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
@@ -90,17 +90,22 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         return false;
     }
 
-    @Override
-    public void onResult(TdApi.Object update) {
+    public void processUpdate(TdApi.Object update) {
         switch (update.getConstructor()) {
             case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                 TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
                 if (!findCreatingOrForwardedCheque(updateNewMessage)) {
-                    regexExecutor.execute(() -> findChequeIdInMessage(updateNewMessage));
+                    findChequeIdInMessage(updateNewMessage);
                 }
             }
             case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque((TdApi.UpdateMessageEdited) update);
         }
+    }
+
+
+    @Override
+    public void onResult(TdApi.Object update) {
+        updatesExecutor.execute(() -> processUpdate(update));
     }
 }
 

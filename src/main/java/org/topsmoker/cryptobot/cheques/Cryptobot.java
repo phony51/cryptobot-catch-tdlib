@@ -11,7 +11,7 @@ public class Cryptobot implements Activator {
     public Cryptobot(Client client) {
         this.client = client;
         this.sendMessage = new TdApi.SendMessage();
-        client.send(new TdApi.SearchPublicChat("@send"), null);
+        client.execute(new TdApi.SearchPublicChat("@send"));
         sendMessage.chatId = USER_ID;
     }
 

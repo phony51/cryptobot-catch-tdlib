@@ -5,20 +5,8 @@ import org.topsmoker.cryptobot.misc.Client;
 import org.topsmoker.cryptobot.misc.ExecutionException;
 
 
-public class ClientSetup {
-    private final org.topsmoker.cryptobot.misc.Client client;
-    private final AuthFlow authFlow;
-    private final ErrorFlow errorFlow;
-    private final TdApi.SetTdlibParameters tdlibParameters;
-
-    public ClientSetup(Client client,
-                       AuthFlow authFlow, ErrorFlow errorFlow,
-                       TdApi.SetTdlibParameters tdlibParameters) {
-        this.client = client;
-        this.authFlow = authFlow;
-        this.errorFlow = errorFlow;
-        this.tdlibParameters = tdlibParameters;
-    }
+public record ClientSetup(Client client, AuthFlow authFlow, ErrorFlow errorFlow,
+                          TdApi.SetTdlibParameters tdlibParameters) {
 
     public interface ErrorFlow {
         void onInvalidCode();
