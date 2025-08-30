@@ -9,7 +9,6 @@ import java.util.stream.LongStream;
 
 public class HandlerCalibrator {
     private static ChequeHandler chequeHandler;
-    private static int updateThreadsCount;
     private static final int updatesCount = 10000;
     private static final int iterations = 1000;
 
@@ -24,10 +23,9 @@ public class HandlerCalibrator {
     }
 
     public static void main(String[] args) throws Exception {
-        updateThreadsCount = Integer.parseInt(args[0]);
         long[] results = new long[iterations];
         for (int i = 0; i < iterations; i++) {
-            chequeHandler = new ChequeHandler(new MockActivator(), null, updateThreadsCount);
+            chequeHandler = new ChequeHandler(new MockActivator(), null);
             long start = System.nanoTime();
             benchmark();
             results[i] = (System.nanoTime() - start) / updatesCount;
