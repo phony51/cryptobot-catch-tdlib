@@ -69,9 +69,9 @@ public record ClientSetup(Client client, AuthFlow authFlow, ErrorFlow errorFlow,
         boolean authorized = false;
         while (!authorized) {
             try {
-                TdApi.Object result = client.execute(new TdApi.GetAuthorizationState());
+                TdApi.AuthorizationState result = client.execute(new TdApi.GetAuthorizationState());
                 authorized = handleAuthorizationState(
-                        ((TdApi.AuthorizationState) result)
+                        result
                 );
             } catch (ExecutionException e) {
                 throw new RuntimeException(e);
@@ -79,5 +79,11 @@ public record ClientSetup(Client client, AuthFlow authFlow, ErrorFlow errorFlow,
 
         }
     }
-}
 
+    public void openChats() {
+        TdApi.Chats chats = client.execute(new TdApi.GetChats(new TdApi.ChatListMain(), Integer.MAX_VALUE));
+        for (long chatId : chats.chatIds) {
+            client.execute(new TdApi.OpenChat(chatId));
+        }
+    }
+}

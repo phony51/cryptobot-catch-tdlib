@@ -66,6 +66,7 @@ public class Main {
 
         catcherClientSetup.setOptimizedOptions();
         catcherClientSetup.auth();
+        catcherClientSetup.openChats();
 
         try (ChequeHandler handler = new ChequeHandler(cryptobot,
                 new PollingService(catcherClient, cryptobot, catcherConfig.getPollingPeriodMs(), catcherConfig.getPollingTimeoutMs()))) {
