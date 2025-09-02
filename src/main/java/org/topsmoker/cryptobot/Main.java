@@ -42,6 +42,7 @@ public class Main {
                         activatorCredentials.getPassword()
                 ),
                 new MyErrorFlow(), baseTdlibParameters);
+
         activatorClientSetup.setOptimizedOptions();
         activatorClientSetup.auth();
 

@@ -63,6 +63,7 @@ public record ClientSetup(Client client, AuthFlow authFlow, ErrorFlow errorFlow,
         client.send(new TdApi.SetOption("message_unload_delay", new TdApi.OptionValueInteger(0)), null);
         client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(false)), null);
         client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(false)), null);
+        client.send(new TdApi.SetNetworkType(new TdApi.NetworkTypeOther()), null);
     }
 
     public void auth() throws InterruptedException {
