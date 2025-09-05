@@ -26,19 +26,19 @@ public class FiltersBenchmark {
 
     @Benchmark
     public boolean benchmarkForwardedCheque() {
-        return chequeHandler.findCreatingOrForwardedCheque(Updates.getForwardedCheque());
+        return chequeHandler.findCreatingOrForwardedCheque(Updates.getForwardedCheque().message);
     }
 
 
     @Benchmark
     public boolean benchmarkRegexCheque() {
-        return chequeHandler.findChequeIdInMessage(Updates.getRegexCheque());
+        return chequeHandler.findChequeIdInMessage(Updates.getRegexCheque().message);
     }
 
 
     @Benchmark
     public boolean benchmarkInlineCheque() {
-        return chequeHandler.findCreatedCheque(Updates.getInlineCheque());
+        return chequeHandler.findCreatedCheque(Updates.getInlineCheque().replyMarkup);
     }
 
     public static void main(String[] args) throws Exception {
