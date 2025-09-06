@@ -97,7 +97,6 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
                 }
             }
             case TdApi.UpdateChatLastMessage.CONSTRUCTOR -> findCreatedCheque(((TdApi.UpdateChatLastMessage) update).lastMessage.replyMarkup);
-            case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque(((TdApi.UpdateMessageEdited) update).replyMarkup);
         }
     }
 
