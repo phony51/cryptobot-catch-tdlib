@@ -37,7 +37,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
             this.pollingService = null;
             this.usePolling = false;
         }
-        updatesExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        updatesExecutor = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors());
     }
 
 
@@ -88,29 +88,27 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         return false;
     }
 
-    public void processUpdate(TdApi.Object update) {
-        switch (update.getConstructor()) {
-            case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
-                TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                if (!findCreatingOrForwardedCheque(updateNewMessage.message)) {
-                    findChequeIdInMessage(updateNewMessage.message);
-                }
-            }
-            case TdApi.UpdateChatLastMessage.CONSTRUCTOR -> {
-                TdApi.Message message = ((TdApi.UpdateChatLastMessage) update).lastMessage;
-                if (message != null) {
-                    findCreatedCheque(message.replyMarkup);
-                }
-            }
-
-            case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque(((TdApi.UpdateMessageEdited) update).replyMarkup);
-        }
-    }
-
 
     @Override
     public void onResult(TdApi.Object update) {
-        updatesExecutor.execute(() -> processUpdate(update));
+        updatesExecutor.execute(() -> {
+            switch (update.getConstructor()) {
+                case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
+                    TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
+                    if (!findCreatingOrForwardedCheque(updateNewMessage.message)) {
+                        findChequeIdInMessage(updateNewMessage.message);
+                    }
+                }
+                case TdApi.UpdateChatLastMessage.CONSTRUCTOR -> {
+                    TdApi.Message message = ((TdApi.UpdateChatLastMessage) update).lastMessage;
+                    if (message != null) {
+                        findCreatedCheque(message.replyMarkup);
+                    }
+                }
+
+                case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque(((TdApi.UpdateMessageEdited) update).replyMarkup);
+            }
+        });
     }
 }
 
