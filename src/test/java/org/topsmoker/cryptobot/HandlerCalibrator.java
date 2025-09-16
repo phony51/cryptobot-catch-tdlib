@@ -27,7 +27,7 @@ public class HandlerCalibrator {
     public static void main(String[] args) throws Exception {
         long[] results = new long[iterations];
         for (int i = 0; i < iterations; i++) {
-            chequeHandler = new ChequeHandler(new MockActivator(), null);
+            chequeHandler = new ChequeHandler(new MockActivator());
             long start = System.nanoTime();
             benchmark();
             results[i] = (System.nanoTime() - start) / updatesCount;

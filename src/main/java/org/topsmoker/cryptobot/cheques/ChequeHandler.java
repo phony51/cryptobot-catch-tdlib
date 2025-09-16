@@ -11,8 +11,6 @@ import static org.topsmoker.cryptobot.cheques.Helper.*;
 
 
 public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
-    private final PollingService pollingService;
-    private final boolean usePolling;
     private final Activator activator;
     private final Pattern chequePattern;
     ExecutorService updatesExecutor;
@@ -21,22 +19,11 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
     @Override
     public void close() throws Exception {
         updatesExecutor.close();
-        if (usePolling) {
-            pollingService.close();
-        }
     }
 
-    public ChequeHandler(Activator activator,
-                         PollingService pollingService) {
+    public ChequeHandler(Activator activator) {
         this.activator = activator;
         this.chequePattern = Pattern.compile("Q[A-Za-z0-9]{10}");
-        if (pollingService != null) {
-            this.pollingService = pollingService;
-            this.usePolling = true;
-        } else {
-            this.pollingService = null;
-            this.usePolling = false;
-        }
         updatesExecutor = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors());
     }
 
@@ -58,10 +45,7 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
             TdApi.ReplyMarkup replyMarkup = message.replyMarkup;
             if (replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
                 TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).rows[0][0];
-                if (isChequeCreatingButton(button) && usePolling) {
-                    pollingService.poll(message.chatId, message.id);
-                    return true;
-                } else {
+                if (button.type.getConstructor() == TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR && !isChequeCreatingButton(button)) {
                     String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
                     if (chequeId != null) {
                         activator.activate(chequeId);

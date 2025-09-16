@@ -14,21 +14,9 @@ public class Config {
     public static class Catcher {
         @XmlElement(name = "Credentials")
         private Credentials credentials;
-        @XmlElement(name = "PollingPeriodMs")
-        private long pollingPeriodMs;
-        @XmlElement(name = "PollingTimeoutMs")
-        private long pollingTimeoutMs;
 
         public Credentials getCredentials() {
             return credentials;
-        }
-
-        public long getPollingPeriodMs() {
-            return pollingPeriodMs;
-        }
-
-        public long getPollingTimeoutMs() {
-            return pollingTimeoutMs;
         }
     }
 

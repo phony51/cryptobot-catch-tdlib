@@ -20,7 +20,7 @@ public class FiltersBenchmark {
 
     @Setup
     public void setup() throws Exception {
-        chequeHandler = new ChequeHandler(new MockActivator(),null);
+        chequeHandler = new ChequeHandler(new MockActivator());
         chequeHandler.close();
     }
 

@@ -3,7 +3,6 @@ package org.topsmoker.cryptobot;
 import org.drinkless.tdlib.TdApi;
 import org.topsmoker.cryptobot.cheques.Cryptobot;
 import org.topsmoker.cryptobot.cheques.ChequeHandler;
-import org.topsmoker.cryptobot.cheques.PollingService;
 import org.topsmoker.cryptobot.config.Config;
 import org.topsmoker.cryptobot.config.Credentials;
 import org.topsmoker.cryptobot.config.ResourceLoader;
@@ -69,8 +68,7 @@ public class Main {
         catcherClientSetup.auth();
         catcherClientSetup.openChats();
 
-        try (ChequeHandler handler = new ChequeHandler(cryptobot,
-                new PollingService(catcherClient, cryptobot, catcherConfig.getPollingPeriodMs(), catcherConfig.getPollingTimeoutMs()))) {
+        try (ChequeHandler handler = new ChequeHandler(cryptobot)) {
             catcherClient.setUpdateHandler(handler);
 
             lock.lock();
