@@ -33,6 +33,7 @@ public class TDLibClient implements Client {
 
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends TdApi.Object> T execute(TdApi.Function<T> function) throws ExecutionException {
         resultLock.lock();
         try {

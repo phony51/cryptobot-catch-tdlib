@@ -13,25 +13,10 @@ public class Helper {
         return message.viaBotUserId == Cryptobot.USER_ID;
     }
 
-    protected static boolean isChequeCreatingButton(TdApi.InlineKeyboardButton inlineKeyboardButton) {
-        return inlineKeyboardButton.text.charAt(0) == '…';
-    }
-
-    protected static boolean isActivated(String url) {
-        return url.length() == ACTIVATED_URL_LENGTH;
-    }
-
 
     protected static String extractChequeId(String url) {
         if (url.length() == CHEQUE_URL_LENGTH &&
                 url.charAt(CHEQUE_ID_OFFSET) == 'C') {
-            return url.substring(CHEQUE_ID_OFFSET);
-        }
-        return null;
-    }
-
-    protected static String unsafeExtractChequeId(String url) {
-        if (url.length() == CHEQUE_URL_LENGTH) {
             return url.substring(CHEQUE_ID_OFFSET);
         }
         return null;

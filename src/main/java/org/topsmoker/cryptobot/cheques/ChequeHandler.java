@@ -39,26 +39,8 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
         return false;
     }
 
-    public boolean findCreatingOrForwardedCheque(TdApi.Message message) {
-        if (message.replyMarkup != null &&
-                isViaCryptobot(message)) {
-            TdApi.ReplyMarkup replyMarkup = message.replyMarkup;
-            if (replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
-                TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).rows[0][0];
-                if (button.type.getConstructor() == TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR && !isChequeCreatingButton(button)) {
-                    String chequeId = extractChequeId(((TdApi.InlineKeyboardButtonTypeUrl) button.type).url);
-                    if (chequeId != null) {
-                        activator.activate(chequeId);
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
-
-    public boolean findCreatedCheque(TdApi.ReplyMarkup replyMarkup) {
+    public boolean processKeyboard(TdApi.ReplyMarkup replyMarkup) {
         if (replyMarkup != null && replyMarkup.getConstructor() == TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR) {
             TdApi.InlineKeyboardButton button = ((TdApi.ReplyMarkupInlineKeyboard) replyMarkup).rows[0][0];
             if (button.type.getConstructor() == TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR) {
@@ -79,18 +61,18 @@ public class ChequeHandler implements Client.ResultHandler, AutoCloseable {
             switch (update.getConstructor()) {
                 case TdApi.UpdateNewMessage.CONSTRUCTOR -> {
                     TdApi.UpdateNewMessage updateNewMessage = (TdApi.UpdateNewMessage) update;
-                    if (!findCreatingOrForwardedCheque(updateNewMessage.message)) {
+                    if (!isViaCryptobot(updateNewMessage.message) && !processKeyboard(updateNewMessage.message.replyMarkup)) {
                         findChequeIdInMessage(updateNewMessage.message);
                     }
                 }
                 case TdApi.UpdateChatLastMessage.CONSTRUCTOR -> {
                     TdApi.Message message = ((TdApi.UpdateChatLastMessage) update).lastMessage;
-                    if (message != null) {
-                        findCreatedCheque(message.replyMarkup);
+                    if (message != null && isViaCryptobot(message)) {
+                        processKeyboard(message.replyMarkup);
                     }
                 }
 
-                case TdApi.UpdateMessageEdited.CONSTRUCTOR -> findCreatedCheque(((TdApi.UpdateMessageEdited) update).replyMarkup);
+                case TdApi.UpdateMessageEdited.CONSTRUCTOR -> processKeyboard(((TdApi.UpdateMessageEdited) update).replyMarkup);
             }
         });
     }

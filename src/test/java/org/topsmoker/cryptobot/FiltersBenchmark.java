@@ -26,7 +26,7 @@ public class FiltersBenchmark {
 
     @Benchmark
     public boolean benchmarkForwardedCheque() {
-        return chequeHandler.findCreatingOrForwardedCheque(Updates.getForwardedCheque().message);
+        return chequeHandler.processKeyboard(Updates.getForwardedCheque().message.replyMarkup);
     }
 
 
@@ -38,7 +38,7 @@ public class FiltersBenchmark {
 
     @Benchmark
     public boolean benchmarkInlineCheque() {
-        return chequeHandler.findCreatedCheque(Updates.getInlineCheque().replyMarkup);
+        return chequeHandler.processKeyboard(Updates.getInlineCheque().replyMarkup);
     }
 
     public static void main(String[] args) throws Exception {
