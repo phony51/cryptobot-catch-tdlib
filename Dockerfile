@@ -13,7 +13,7 @@ RUN mvn install:install-file \
     -Dpackaging=jar
 
 COPY src/ ./src
-RUN mvn package -DskipTests
+RUN mvn package -Dmaven.test.skip=true
 
 
 FROM ubuntu:24.04
