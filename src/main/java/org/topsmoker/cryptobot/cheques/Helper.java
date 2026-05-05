@@ -3,7 +3,7 @@ package org.topsmoker.cryptobot.cheques;
 import org.drinkless.tdlib.TdApi;
 
 public class Helper {
-    protected static final int CHEQUE_URL_LENGTH = 35;
+    protected static final int CHEQUE_URL_LENGTH = 40;
     protected static final int CHEQUE_ID_LENGTH = 12;
     protected static final int CHEQUE_ID_OFFSET = CHEQUE_URL_LENGTH - CHEQUE_ID_LENGTH;
     private final static int ACTIVATED_URL_LENGTH = 34;
